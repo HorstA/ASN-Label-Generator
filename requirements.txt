@@ -1,3 +1,4 @@
 reportlab
-reportlab_qrcode
 clize
+pylibdmtx
+setuptools

@@ -2,7 +2,7 @@
 # ASN Label Generator
 
 
-This is a tool to create ASN Labels to use for document management systems such as [Paperless-ngx](https://docs.paperless-ngx.com/). The [recommended workflow](https://docs.paperless-ngx.com/usage/#usage-recommended-workflow) of Paperless-ngx uses QR codes for ASN (archive serial number) labels.
+This is a tool to create ASN Labels to use for document management systems such as [Paperless-ngx](https://docs.paperless-ngx.com/). Labels use **ECC200 DataMatrix** barcodes for the ASN (archive serial number), which Paperless-ngx can read reliably on small Avery stickers.
 
 ![Single label](docs/single-label.svg)
 
@@ -11,7 +11,7 @@ This Python based CLI tool outputs a PDF for printing on the label sheets.
 
 ## Features
 
-Besides generating ASN labels with a QR Code the tool can also
+Besides generating ASN labels with a DataMatrix code the tool can also
 
 * combine multiple labels on one physical label on the sheet  
   _This is helpful for small label sizes even though your physical label cutout sizes are bigger._
@@ -75,8 +75,8 @@ Options:
   -d, --num-digits=INT        Number of digits for the ASN, e.g. 000001 (default: 6)
   -s, --first-asn=INT         First ASN to use, e.g. 100001 (default: 1)
   -f, --font-size=STR         Fontsize with a unit, e.g. 2mm, 0.4cm (default: 2mm)
-  -q, --qr-size=FLOAT         Size of the QR-Code as percentage of the label hight (default: 0.9)
-  -m, --qr-margin=STR         Margin around the QR-Code with a unit, e.g. 1mm (default: 1mm)
+  -q, --qr-size=FLOAT         Size of the DataMatrix code as percentage of the label hight (default: 0.9)
+  -m, --qr-margin=STR         Margin around the DataMatrix code with a unit, e.g. 1mm (default: 1mm)
   --sub-labels-x, --lx=INT    How many labels to put on a phyical label horizontally (default: 1)
   --sub-labels-y, --ly=INT    How many labels to put on a phyical label vertically (default: 1)
   --debug                     enable debug mode
@@ -104,6 +104,23 @@ Use ``--debug`` and ``--position-helper`` to test your printer settings.
 _**Recommendation:** do test prints on normal paper before printing to the actual label sheets._
 
 _**Note**: Make sure to set print size to 100%, not fit to page or similar._
+
+### Paperless-ngx configuration
+
+For ASN detection from scanned documents, enable in Paperless-ngx:
+
+```
+PAPERLESS_CONSUMER_ENABLE_BARCODES=true
+PAPERLESS_CONSUMER_ENABLE_ASN_BARCODE=true
+```
+
+On small label sheets (e.g. Avery L4731, ~9 mm DataMatrix), the [Paperless wiki](https://github.com/paperless-ngx/paperless-ngx/wiki/Using-and-Generating-ASN-Barcodes) recommends:
+
+```
+PAPERLESS_CONSUMER_BARCODE_SCANNER=ZXING
+PAPERLESS_CONSUMER_BARCODE_UPSCALE=1.5
+PAPERLESS_CONSUMER_BARCODE_DPI=600
+```
 
 
 ### Running from CLI

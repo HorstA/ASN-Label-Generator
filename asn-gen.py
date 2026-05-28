@@ -8,9 +8,13 @@ from reportlab.lib.units import mm
 from reportlab.lib.units import toLength
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
-from reportlab_qrcode import QRCodeImage
+from reportlab.platypus import Flowable
+from reportlab.graphics.barcode import ecc200datamatrix
 
-# from reportlab.graphics import shapes
+try:
+    from pylibdmtx.pylibdmtx import encode as dmtx_encode
+except ImportError:
+    dmtx_encode = None
 
 from clize import run
 
@@ -19,6 +23,92 @@ from AveryLabels import labelInfo
 
 
 PROJECT_HOMEPAGE = "https://github.com/aborelis/ASN-Label-Generator"
+
+
+def _crop_to_symbol(grid):
+    """Remove libdmtx quiet-zone padding so the symbol fills the target size."""
+    min_row = min_col = None
+    max_row = max_col = None
+    for row_i, row in enumerate(grid):
+        for col_i, cell in enumerate(row):
+            if cell != "x":
+                continue
+            if min_row is None:
+                min_row = max_row = row_i
+                min_col = max_col = col_i
+            else:
+                min_row = min(min_row, row_i)
+                max_row = max(max_row, row_i)
+                min_col = min(min_col, col_i)
+                max_col = max(max_col, col_i)
+    if min_row is None:
+        return grid
+    return [row[min_col : max_col + 1] for row in grid[min_row : max_row + 1]]
+
+
+def _datamatrix_module_grid(data):
+    """Return DataMatrix modules as rows of 'x' (dark) and ' ' (light)."""
+    if dmtx_encode is not None:
+        encoded = dmtx_encode(data.encode("ascii"))
+        cell = 5
+        i_w = encoded.width
+        i_h = encoded.height
+        pixels = encoded.pixels
+        bpp = 3
+        rows = []
+        for row in range(i_h // cell):
+            line = []
+            for col in range(i_w // cell):
+                offset = ((row * cell) * i_w + col * cell) * bpp
+                line.append("x" if pixels[offset : offset + bpp] != b"\xff\xff\xff" else " ")
+            rows.append("".join(line))
+        return _crop_to_symbol(rows)
+
+    dm = ecc200datamatrix.ECC200DataMatrix(data)
+    dm.validate()
+    dm.encode()
+    grid = []
+    for row in dm.encoded:
+        grid.append("".join("x" if cell else " " for cell in row))
+    return grid
+
+
+class DataMatrixImage(Flowable):
+    """ECC200 DataMatrix scaled to an exact square size in the PDF."""
+
+    def __init__(self, data, size):
+        Flowable.__init__(self)
+        self.width = size
+        self.height = size
+        self._matrix = _datamatrix_module_grid(data)
+        self._legacy_dm = None
+        if dmtx_encode is None:
+            self._legacy_dm = ecc200datamatrix.ECC200DataMatrix(data)
+            self._legacy_dm.x = 0
+            self._legacy_dm.y = 0
+
+    def draw(self):
+        if self._legacy_dm is not None:
+            dm = self._legacy_dm
+            self.canv.saveState()
+            self.canv.scale(self.width / dm.width, self.height / dm.height)
+            dm.canv = self.canv
+            dm.draw()
+            self.canv.restoreState()
+            return
+
+        n = len(self._matrix)
+        box_size = self.width / n
+        self.canv.saveState()
+        self.canv.setFillColor("black")
+        for row_i, row in enumerate(self._matrix):
+            for col_i, cell in enumerate(row):
+                if cell != "x":
+                    continue
+                xr = col_i * box_size
+                yr = self.height - (row_i + 1) * box_size
+                self.canv.rect(xr, yr, box_size, box_size, fill=1, stroke=0)
+        self.canv.restoreState()
 
 
 class LabelContext:
@@ -88,8 +178,8 @@ def render(context: LabelContext, c: canvas.Canvas, width: float, height: float)
             context.inc_asn()
 
             qr_width = min(sub_labelheight * context.qr_size, sub_labelheight - 2 * context.qr_margin)
-            qr = QRCodeImage(barcode_value, size=qr_width, border=0)
-            qr.drawOn(
+            dm = DataMatrixImage(barcode_value, size=qr_width)
+            dm.drawOn(
                 c, x=context.qr_margin, y=(sub_labelheight - qr_width) / 2
             )
             c.setFont("Helvetica", size=context.font_size)
@@ -181,8 +271,8 @@ def generate(
 
 
     :param font_size: Fontsize with a unit, e.g. 2mm, 0.4cm
-    :param qr_size: Size of the QR-Code as percentage of the label hight
-    :param qr_margin: Margin around the QR-Code with a unit, e.g. 1mm
+    :param qr_size: Size of the DataMatrix code as percentage of the label hight
+    :param qr_margin: Margin around the DataMatrix code with a unit, e.g. 1mm
 
     :param sub_labels_x: How many labels to put on a phyical label horizontally
     :param sub_labels_y: How many labels to put on a phyical label vertically
