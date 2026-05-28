@@ -4,30 +4,33 @@
 
 This is a tool to create ASN Labels to use for document management systems such as [Paperless-ngx](https://docs.paperless-ngx.com/). Labels use **ECC200 DataMatrix** barcodes for the ASN (archive serial number), which Paperless-ngx can read reliably on small Avery stickers.
 
-![Single label](docs/single-label.svg)
+![Single label](docs/ASN123.png)
 
-This Python based CLI tool outputs a PDF for printing on the label sheets. 
+This Python based CLI tool outputs a PDF for printing on the label sheets.
 
+## ☝️New in this fork
+
+Instead of using QR-Code wich is not ideal for scanning with paperless this fork is using DataMatrix. It helped a lot in the detection in my tests even with no upscaling.
 
 ## Features
 
 Besides generating ASN labels with a DataMatrix code the tool can also
 
-* combine multiple labels on one physical label on the sheet  
+* combine multiple labels on one physical label on the sheet
   _This is helpful for small label sizes even though your physical label cutout sizes are bigger._
 
-* support custom number ranges  
+* support custom number ranges
     _This can be useful if you want to use different folders and number ranges for yourself (e.g. ASN**0**0001), your partner (ASN**2**0001), your kids (ASN**4**0001), etc._
-    
-* add a color bar to the side of the labels to allow easier visual identification where the label belongs to  
-    _I use expandable folders with different colors to store the physical documents for me, my wife and the kids, i.e. one color per person_  
+
+* add a color bar to the side of the labels to allow easier visual identification where the label belongs to
+    _I use expandable folders with different colors to store the physical documents for me, my wife and the kids, i.e. one color per person_
     _e.g. blue for person A, green for person B, yellow for person C_
 
     ![Label with bar](docs/label-with-bar.png)
 
     ![Folders](docs/folders.png)
 
-* add another color bar (highlight color) to mark important docs      
+* add another color bar (highlight color) to mark important docs
     _e.g. blue + red for important (long term storage) documents of person A_
 
     ![Label with highlight bar](docs/label-with-hbar.png)
@@ -53,7 +56,7 @@ Colors give a nice visual hint on where a document belongs to.
 
 This tool is hightly flexible, almost all parameters can be controlled from the command line.
 
-Other Avery (or competitor's) label sizes can be added to `labelInfo` in `AveryLabels.py`. 
+Other Avery (or competitor's) label sizes can be added to `labelInfo` in `AveryLabels.py`.
 
 You can install Python and all dependencies yourself or use Docker.
 
@@ -100,7 +103,7 @@ Other actions:
 ```
 
 #### Testing your printer settings
-Use ``--debug`` and ``--position-helper`` to test your printer settings.  
+Use ``--debug`` and ``--position-helper`` to test your printer settings.
 _**Recommendation:** do test prints on normal paper before printing to the actual label sheets._
 
 _**Note**: Make sure to set print size to 100%, not fit to page or similar._
@@ -127,15 +130,15 @@ PAPERLESS_CONSUMER_BARCODE_DPI=600
 
 You'll need Python 3 on your system.
 
-To install all dependencies use 
+To install all dependencies use
 
-`` pip install -r requirements.txt `` 
+`` pip install -r requirements.txt ``
 
 Depending on your configuration either use
 
 `` ./asn-gen.py ... ``
 
-or 
+or
 
 `` python3 asn-gen.py ... ``
 
@@ -156,7 +159,7 @@ If the filename is omitted the output defaults to
 
 `` label-<labeltype>-<prefix>-<first-asn>-<first-asn+number>.pdf ``
 
-e.g. 
+e.g.
 
 `` label-4731-ASN-000001-000190.pdf ``
 
@@ -167,7 +170,7 @@ e.g.
 
 ### List supported labels
 
-To get a list of supported labels use 
+To get a list of supported labels use
 
 `` ./asn-gen.py --labels ``
 
@@ -179,14 +182,14 @@ To generate labels for a Avery L4731 sheet with a bar (blue) and a highlight bar
 
 `` ./asn-gen.py --bw 8 --bc 0000ff --hw 3 --hc ff0000 -s 700001 out/labels-700001.pdf ``
 
-![alt text](docs/result1.png)  
+![alt text](docs/result1.png)
 _(I'd recommend using more pleasant colors for yourself ;) )_
 
 
-### L5161 labels with multiple labels per physical label (cutting required) 
+### L5161 labels with multiple labels per physical label (cutting required)
 To generate labels for a 5161 sheets with 6 labels on one physical label (1 sheet with 120 ASN labels) use:
 
-`` ./asn-gen.py -l 5161 --lx 3 --ly 2 -n 20  --debug --position-helper``  
+`` ./asn-gen.py -l 5161 --lx 3 --ly 2 -n 20  --debug --position-helper``
 
 _**Recommendation:**_ `` --position-helper `` _will add small dots in the corners of (sub-)labels. This can be useful as subtle sublabel cutting guides._
 
@@ -194,10 +197,10 @@ _**Recommendation:**_ `` --position-helper `` _will add small dots in the corner
 
 
 
-![label-5161-ASN-000001-000021.pdf](docs/result2.png)  
-_Output filename: label-5161-ASN-000001-000021.pdf_  
+![label-5161-ASN-000001-000021.pdf](docs/result2.png)
+_Output filename: label-5161-ASN-000001-000021.pdf_
 
-![alt text](docs/result2c.png)  
+![alt text](docs/result2c.png)
 
 
 
